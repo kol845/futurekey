@@ -1,9 +1,6 @@
 # FutureKey
-Create and send passwords to your email in a desired time.
+Create and send passwords to your email in a desired date and time.
 
-## Installation
-1. Clone git
-```shell
-git clone https://github.com/kol845/futurekey.git
-```
-2. 
+Helpfull tool for stopping digital entertainment addiction.
+
+Create a password, change your account to this new password and send it to your future mail. Now you can't acces the account untill you get your FutureKey.
