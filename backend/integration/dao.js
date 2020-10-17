@@ -1,8 +1,48 @@
 
 var sqlite3 = require('sqlite3').verbose();
-const DBSOURCE = "./db/db.sqlite"
-const Message = require('../model/message');
+const path = require('path');
+const fs = require('fs')
 
+
+const DBSOURCE = path.join(__dirname, "../db/db.sqlite")
+const Message = require(path.join(__dirname, '../model/message'));
+
+function checkDB() {
+    // if the 'db.sqlite' does not exist, then it is created
+    if(!fs.existsSync(DBSOURCE)){
+        let db = connect();
+        const create1 = `CREATE TABLE active_messages (
+                            messageID INTEGER PRIMARY KEY AUTOINCREMENT,
+                            passwd varchar(255),
+                            email VARCHAR(255),
+                            send_time BIGINT NOT NULL,
+                            create_time BIGINT NOT NULL
+                        );`
+        const create2 = `CREATE TABLE inactive_messages (
+                            messageID INTEGER PRIMARY KEY AUTOINCREMENT,
+                            passwd varchar(255),
+                            email VARCHAR(255),
+                            send_time BIGINT NOT NULL,
+                            create_time BIGINT NOT NULL
+                        );`
+        db.run(create1, function(err) {
+            if(err){
+                console.log(err);
+                db.close();
+                reject({error: err})
+            }
+        });
+        db.run(create2, function(err) {
+            if(err){
+                console.log(err);
+                db.close();
+                reject({error: err})
+            }
+        });
+        db.close();
+        }
+
+}
 
 function connect() {
     let client = new sqlite3.Database(DBSOURCE);
@@ -107,4 +147,5 @@ module.exports = {
     postMessage,
     deleteMessageQueue,
     deleteMessages,
+    checkDB,
 }

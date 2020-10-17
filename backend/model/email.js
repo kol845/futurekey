@@ -9,7 +9,7 @@ function checkMailSchedual(messages){
     messages.forEach(message => {
         //console.log(message)
         if(time_now>message.send_time){
-            console.log("Sending following mail: "+message)
+            console.log("Sending following mail: ",message)
             delMessages.push(message);
             sendMail(message);
             console.log("Mail sucessfully sent!")

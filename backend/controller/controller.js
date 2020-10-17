@@ -45,9 +45,18 @@ async function checkMailSchedual(){
         throw error;
     }
 }
+function checkDB(){
+    try{
+        dao.checkDB();
+
+    }catch(error){
+        throw error;
+    }
+}
 module.exports = {
     postMessage,
     checkMailSchedual,
     deleteMessageQueue,
     getMessages,
+    checkDB,
 }
