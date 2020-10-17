@@ -1,0 +1,8 @@
+{
+    "host": "mailcluster.loopia.se",
+    "port": 587,
+    "auth": {
+        "user": "service@pebo.online",
+        "pass": "kxw6ryYBpoKTFRSojyvk"
+    }
+}

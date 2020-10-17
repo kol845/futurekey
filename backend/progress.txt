@@ -1,0 +1,6 @@
+Okt 6
+Now I have a working postMessage() and getMessages() API calls.
+
+Next step is to work with:
+https://www.npmjs.com/package/node-cron
+Create a cron job for checking the the DB for emails that are due for sending, once per hour.

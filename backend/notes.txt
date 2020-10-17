@@ -1,0 +1,27 @@
+babel-cli
+---------
+Converts ES6 code to ES5. When using ES6 syntax, some browsers will not understand our code.
+
+
+To run the server, you will get a error because of ES6 syntax. You have to run the server with babel, with:
+$node_modules/.bin/babel-node app.js
+
+SQL DB
+------
+Tabelname: active_messages
+(messageID, send_time, create_time, passwd, email)
+
+------CREATE TABEL CODE--------
+CREATE TABLE active_messages (
+  messageID INTEGER PRIMARY KEY AUTOINCREMENT,
+  passwd varchar(255),
+  email VARCHAR(255),
+  send_time INT NOT NULL,
+  create_time INT NOT NULL
+  );
+
+INSERT INTO active_messages(passwd, email, send_time, create_time)
+VALUES
+('testPass', 'test@test.test', 1601726400, 1600948461),
+('pebo123', 'pebo@pebo.pebo', 1601726400, 1600948461);
+ 

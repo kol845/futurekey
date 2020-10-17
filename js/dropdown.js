@@ -1,4 +1,4 @@
-/*contains all the logic that makes the dropdown date picker functional*/
+/*contains all the logic that makes the dropdown date picker functional(WORK IN PROGRESS...)*/
 function chooseElement(elem){
     console.log(elem);
 }
