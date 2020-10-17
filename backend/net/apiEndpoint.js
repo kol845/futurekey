@@ -21,9 +21,14 @@ var task = cron.schedule("0,15,30,45 * * * * *", async function(){
 function router(router) {
     router.get('/api/messages', async (req, res) => {
         try {
+
             const messages = await controller.getMessages();
+            console.log("Done messages...");
+
             res.send(JSON.stringify({ messages: messages }))
         } catch (error) {
+            console.log("Error Occured: "+error);
+
             res.send(JSON.stringify({ error: error }))
         }
     });

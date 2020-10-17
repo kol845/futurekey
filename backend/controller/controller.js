@@ -7,6 +7,7 @@ async function getMessages() {
         return await dao.getMessages();
     }
     catch (error) {
+
         throw error
     }
 }
@@ -48,4 +49,5 @@ module.exports = {
     postMessage,
     checkMailSchedual,
     deleteMessageQueue,
+    getMessages,
 }
