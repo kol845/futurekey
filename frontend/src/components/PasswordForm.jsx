@@ -5,6 +5,7 @@ import {
   MAX_LENGTH,
   DEFAULT_LENGTH,
 } from '../lib/password.js';
+import { encryptForTime } from '../lib/timelock.js';
 import { sendPasswordToTheFuture } from '../lib/api.js';
 
 // "00:00" .. "23:00"
@@ -39,18 +40,21 @@ export default function PasswordForm() {
     const sendTime = new Date(year, month - 1, day, hours, 0, 0, 0).getTime();
 
     if (sendTime <= Date.now()) {
-      const proceed = window.confirm(
-        'That delivery time is in the past, so the password will be sent on the next hourly run. Continue?'
-      );
-      if (!proceed) return;
+      return setStatus({
+        type: 'error',
+        message: 'Pick a future date/time — a timelock can only point forward.',
+      });
     }
 
-    setStatus({ type: 'loading' });
+    setStatus({ type: 'loading', message: 'Locking your password to the future…' });
     try {
-      await sendPasswordToTheFuture({ password, email, sendTime });
+      // Always encrypt in the browser. The plaintext never leaves this page; the
+      // backend stores only a blob nobody can open until the delivery time.
+      const ciphertext = await encryptForTime(password, sendTime);
+      await sendPasswordToTheFuture({ payload: ciphertext, encrypted: true, email, sendTime });
       setStatus({
         type: 'success',
-        message: `Locked in. ${email} will receive the password around ${date} ${hour || '00:00'}.`,
+        message: `Locked. ${email} will receive the password around ${date} ${hour || '00:00'}. Until then it can't be recovered — not even by us.`,
       });
       setPassword('');
       setEmail('');
@@ -128,10 +132,16 @@ export default function PasswordForm() {
       </div>
 
       <button type="submit" className="btn btn--primary" disabled={loading}>
-        {loading ? 'Sending…' : 'Send password to the future'}
+        {loading ? 'Locking…' : 'Lock password to the future'}
       </button>
 
+      <p className="field__hint">
+        Set this password on your account now. It's encrypted in your browser and
+        can only be unlocked on the delivery date — by anyone, including you.
+      </p>
+
       {status.type === 'error' && <p className="status status--error">{status.message}</p>}
+      {status.type === 'loading' && <p className="status">{status.message}</p>}
       {status.type === 'success' && <p className="status status--success">{status.message}</p>}
     </form>
   );

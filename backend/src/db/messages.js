@@ -1,18 +1,19 @@
 const { pool } = require('./pool');
 
 /**
- * Queue a new password to be delivered in the future.
+ * Queue a password for future delivery.
  *
- * @param {{ password: string, email: string, sendTime: number }} msg
+ * @param {{ payload: string, encrypted: boolean, email: string, sendTime: number }} msg
+ *        payload is a tlock blob when encrypted, otherwise the plaintext password.
  *        sendTime is epoch milliseconds (UTC).
  * @returns {Promise<{ id: number }>}
  */
-async function insertMessage({ password, email, sendTime }) {
+async function insertMessage({ payload, encrypted, email, sendTime }) {
   const result = await pool.query(
-    `INSERT INTO messages (password, email, send_time)
-     VALUES ($1, $2, to_timestamp($3 / 1000.0))
+    `INSERT INTO messages (payload, encrypted, email, send_time)
+     VALUES ($1, $2, $3, to_timestamp($4 / 1000.0))
      RETURNING id`,
-    [password, email, sendTime]
+    [payload, encrypted, email, sendTime]
   );
   return result.rows[0];
 }
@@ -22,7 +23,7 @@ async function insertMessage({ password, email, sendTime }) {
  */
 async function getDueMessages() {
   const result = await pool.query(
-    `SELECT id, password, email, send_time
+    `SELECT id, payload, encrypted, email, send_time
      FROM messages
      WHERE status = 'queued' AND send_time <= now()
      ORDER BY send_time ASC`

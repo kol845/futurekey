@@ -3,7 +3,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 
-const { initSchema } = require('./db/pool');
+const { runMigrations } = require('./db/migrate');
 const { getCounts } = require('./db/messages');
 const messagesRoutes = require('./routes/messages');
 const cronRoutes = require('./routes/cron');
@@ -38,7 +38,7 @@ app.use('/api', messagesRoutes);
 app.use('/cron', cronRoutes);
 
 async function start() {
-  await initSchema();
+  await runMigrations();
   app.listen(PORT, () => {
     console.log(`FutureKey API listening on port ${PORT}`);
   });

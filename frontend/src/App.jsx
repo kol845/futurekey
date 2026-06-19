@@ -6,12 +6,14 @@ export default function App() {
       <header className="app__header">
         <h1>FutureKey</h1>
         <p className="app__tagline">
-          Lock yourself out, then send the key to your future self. Pick a
-          password, set a delivery date, and we'll email it back when the time
-          comes.
+          Lock yourself out, then send the key to your future self.
         </p>
       </header>
       <PasswordForm />
+      <footer className="app__footnote">
+        Your password is timelock-encrypted in the browser, so it can't be opened
+        by anyone — not even us — until the delivery date, when we email it back.
+      </footer>
     </main>
   );
 }

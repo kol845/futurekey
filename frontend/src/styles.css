@@ -39,6 +39,15 @@ body {
   line-height: 1.5;
 }
 
+.app__footnote {
+  margin: 28px 0 0;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
 .card {
   background: var(--card);
   border: 1px solid var(--border);
