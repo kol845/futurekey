@@ -114,18 +114,28 @@ rather than marking it failed.
 
 The backend does **not** run its own timer. Free hosts sleep when idle, so an
 in-process scheduler can't be trusted to fire. Instead an external scheduler calls
-`POST /cron/dispatch` once an hour at `xx:00`; the endpoint decrypts and sends
-anything due and the request also wakes the sleeping host. It's idempotent —
-calling it twice sends nothing the second time.
+`POST /cron/dispatch` **every 5 minutes** (delivery times snap to 5-minute steps);
+the endpoint decrypts and sends anything due, and the request also keeps the host
+awake. It's idempotent — calling it twice sends nothing the second time.
 
-`.github/workflows/dispatch.yml` is set up to do this for free. After deploying,
-add two repository secrets (**Settings → Secrets and variables → Actions**):
+**Recommended: [cron-job.org](https://cron-job.org)** (free). It runs at a true
+5-minute cadence and supports POST with a custom header. Create a job:
+
+- URL `https://<your-api>/cron/dispatch`, method **POST**, schedule **every 5 min**
+- Header `Authorization: Bearer <CRON_SECRET>`
+
+`.github/workflows/dispatch.yml` is included as a zero-extra-signup fallback
+(`*/5 * * * *`). It works, but GitHub Actions cron is best-effort and often
+**delayed several minutes** under load, so timing is looser than cron-job.org. If
+you use it, add two repo secrets (**Settings → Secrets and variables → Actions**):
 
 - `BACKEND_URL` — your deployed API base URL (e.g. `https://futurekey-api.onrender.com`)
 - `CRON_SECRET` — the same value as the backend's `CRON_SECRET`
 
-Alternatives: [cron-job.org](https://cron-job.org) or [UptimeRobot](https://uptimerobot.com),
-both pointing at the same endpoint with the secret.
+A 5-minute ping also means the Render free web service never idles out, so it
+stays awake ~24/7 (~730 of the 750 free instance-hours/month — fine for this one
+service, but it leaves no room for a second always-on free service in the account).
+[UptimeRobot](https://uptimerobot.com) also works if you need a backup pinger.
 
 ## Database migrations
 

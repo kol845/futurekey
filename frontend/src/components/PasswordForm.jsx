@@ -7,19 +7,33 @@ import {
 } from '../lib/password.js';
 import { encryptForTime } from '../lib/timelock.js';
 import { sendPasswordToTheFuture } from '../lib/api.js';
-
-// "00:00" .. "23:00"
-const HOURS = Array.from({ length: 24 }, (_, h) => `${String(h).padStart(2, '0')}:00`);
+import ClockPicker from './ClockPicker.jsx';
 
 const IDLE = { type: 'idle' };
+
+function formatDate(dateStr, hour, minute) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const dt = new Date(y, m - 1, d, hour, minute);
+  return dt.toLocaleString(undefined, {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
 
 export default function PasswordForm() {
   const [password, setPassword] = useState('');
   const [length, setLength] = useState(DEFAULT_LENGTH);
   const [email, setEmail] = useState('');
   const [date, setDate] = useState('');
-  const [hour, setHour] = useState(''); // '' means midnight (00:00)
+  const [time, setTime] = useState({ hour: 0, minute: 0 });
   const [status, setStatus] = useState(IDLE);
+
+  function clampLength(n) {
+    return Math.max(MIN_LENGTH, Math.min(MAX_LENGTH, n));
+  }
 
   function handleGenerate() {
     setPassword(generatePassword(length));
@@ -33,33 +47,33 @@ export default function PasswordForm() {
     if (!email) return setStatus({ type: 'error', message: 'Enter a recipient email.' });
     if (!date) return setStatus({ type: 'error', message: 'Pick a delivery date.' });
 
-    // Date is primary; time is optional and defaults to 00:00 of that date.
-    // Build a local-time instant, then send epoch ms (UTC) to the backend.
     const [year, month, day] = date.split('-').map(Number);
-    const hours = hour ? Number(hour.slice(0, 2)) : 0;
-    const sendTime = new Date(year, month - 1, day, hours, 0, 0, 0).getTime();
+    const sendTime = new Date(year, month - 1, day, time.hour, time.minute, 0, 0).getTime();
 
+    // The password is timelock-encrypted to this exact moment, so it must be in
+    // the future — a timelock can only point forward.
     if (sendTime <= Date.now()) {
       return setStatus({
         type: 'error',
-        message: 'Pick a future date/time — a timelock can only point forward.',
+        message: 'Pick a future date and time — a timelock can only point forward.',
       });
     }
 
-    setStatus({ type: 'loading', message: 'Locking your password to the future…' });
+    setStatus({ type: 'loading', message: 'Locking your key to the future…' });
     try {
-      // Always encrypt in the browser. The plaintext never leaves this page; the
-      // backend stores only a blob nobody can open until the delivery time.
+      // Encrypt in the browser. The plaintext never leaves this page; the server
+      // only ever stores a blob nobody can open until the delivery time.
       const ciphertext = await encryptForTime(password, sendTime);
       await sendPasswordToTheFuture({ payload: ciphertext, encrypted: true, email, sendTime });
       setStatus({
         type: 'success',
-        message: `Locked. ${email} will receive the password around ${date} ${hour || '00:00'}. Until then it can't be recovered — not even by us.`,
+        message: `Sealed. ${email} gets the key around ${formatDate(date, time.hour, time.minute)} — until then nobody can open it, not even us.`,
       });
       setPassword('');
       setEmail('');
       setDate('');
-      setHour('');
+      setTime({ hour: 0, minute: 0 });
+      setLength(DEFAULT_LENGTH);
     } catch (err) {
       setStatus({ type: 'error', message: err.message });
     }
@@ -69,14 +83,14 @@ export default function PasswordForm() {
 
   return (
     <form className="card" onSubmit={handleSubmit}>
-      <label className="field">
+      <div className="field">
         <span className="field__label">Password</span>
         <div className="field__row">
           <input
             type="text"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="Type one or generate it"
+            placeholder="Type one or let Kee roll it"
             autoComplete="off"
             spellCheck={false}
           />
@@ -85,19 +99,27 @@ export default function PasswordForm() {
           </button>
         </div>
         <div className="field__row field__row--sub">
-          <label className="field__sublabel" htmlFor="length">
-            Length: {length}
-          </label>
-          <input
-            id="length"
-            type="range"
-            min={MIN_LENGTH}
-            max={MAX_LENGTH}
-            value={length}
-            onChange={(e) => setLength(Number(e.target.value))}
-          />
+          <span className="field__sublabel">Length</span>
+          <div className="stepper">
+            <button
+              type="button"
+              onClick={() => setLength((l) => clampLength(l - 1))}
+              aria-label="Shorter"
+            >
+              −
+            </button>
+            <span className="stepper__value">{length}</span>
+            <button
+              type="button"
+              onClick={() => setLength((l) => clampLength(l + 1))}
+              aria-label="Longer"
+            >
+              +
+            </button>
+          </div>
+          <span className="field__hint">upper · lower · number · symbol</span>
         </div>
-      </label>
+      </div>
 
       <label className="field">
         <span className="field__label">Send to</span>
@@ -110,39 +132,34 @@ export default function PasswordForm() {
         />
       </label>
 
-      <div className="field">
+      <label className="field">
         <span className="field__label">Deliver on</span>
-        <div className="field__row">
-          <input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            required
-          />
-          <select value={hour} onChange={(e) => setHour(e.target.value)} aria-label="Delivery hour">
-            <option value="">Time (optional)</option>
-            {HOURS.map((h) => (
-              <option key={h} value={h}>
-                {h}
-              </option>
-            ))}
-          </select>
-        </div>
-        <p className="field__hint">No time selected means midnight (00:00) on that date.</p>
+        <input
+          type="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+          required
+        />
+      </label>
+
+      <div className="field">
+        <span className="field__label">At what time</span>
+        <ClockPicker hour={time.hour} minute={time.minute} onChange={setTime} />
+        <p className="field__hint">Leave it at 12:00 AM for midnight.</p>
       </div>
 
       <button type="submit" className="btn btn--primary" disabled={loading}>
-        {loading ? 'Locking…' : 'Lock password to the future'}
+        {loading ? 'Locking…' : 'Send my key to the future'}
       </button>
 
       <p className="field__hint">
-        Set this password on your account now. It's encrypted in your browser and
-        can only be unlocked on the delivery date — by anyone, including you.
+        Set this as your account password now. Kee encrypts it in your browser, so
+        it can only be unlocked on the delivery date — by anyone, including you.
       </p>
 
-      {status.type === 'error' && <p className="status status--error">{status.message}</p>}
       {status.type === 'loading' && <p className="status">{status.message}</p>}
-      {status.type === 'success' && <p className="status status--success">{status.message}</p>}
+      {status.type === 'error' && <p className="status status--error">{status.message}</p>}
+      {status.type === 'success' && <p className="status status--success">🔒 {status.message}</p>}
     </form>
   );
 }

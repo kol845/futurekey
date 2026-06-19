@@ -1,11 +1,16 @@
 name: Dispatch due passwords
 
-# Runs at the top of every hour (xx:00 UTC) and pings the backend so it
-# delivers any passwords whose send time has passed. This also wakes the
-# Render free service if it has spun down.
+# Pings the backend every 5 minutes so it delivers any passwords whose send
+# time has passed (delivery times snap to 5-minute steps). This also keeps the
+# Render free service awake.
+#
+# NOTE: GitHub Actions cron is best-effort and is often delayed several minutes
+# under load, so a true 5-minute cadence isn't guaranteed here. For tight timing
+# use cron-job.org instead (see README) — this workflow is the zero-extra-signup
+# fallback.
 on:
   schedule:
-    - cron: '0 * * * *'
+    - cron: '*/5 * * * *'
   workflow_dispatch: {} # allow manual runs from the Actions tab
 
 jobs:

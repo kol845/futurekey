@@ -1,19 +1,24 @@
+import Kee from './components/Kee.jsx';
 import PasswordForm from './components/PasswordForm.jsx';
 
 export default function App() {
   return (
-    <main className="app">
-      <header className="app__header">
-        <h1>FutureKey</h1>
-        <p className="app__tagline">
-          Lock yourself out, then send the key to your future self.
-        </p>
-      </header>
-      <PasswordForm />
-      <footer className="app__footnote">
-        Your password is timelock-encrypted in the browser, so it can't be opened
-        by anyone — not even us — until the delivery date, when we email it back.
-      </footer>
-    </main>
+    <div className="page">
+      <main className="app">
+        <header className="hero">
+          <Kee size={104} />
+          <h1 className="hero__title">
+            Future<span>Key</span>
+          </h1>
+          <p className="hero__tagline">Lock yourself out. On purpose.</p>
+          <p className="hero__sub">
+            Pick a password, hand it to Kee, and we'll mail it back to future you
+            on the date you choose. Until then, you're locked out.
+          </p>
+        </header>
+        <PasswordForm />
+        <footer className="footer">Kee will keep your key safe until it's time.</footer>
+      </main>
+    </div>
   );
 }
