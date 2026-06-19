@@ -1,0 +1,28 @@
+# Declarative Render setup. Create a Blueprint from this file, or set the same
+# values manually in the Render dashboard.
+services:
+  - type: web
+    name: futurekey-api
+    runtime: node
+    rootDir: backend
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: futurekey-db
+          property: connectionString
+      - key: RESEND_API_KEY
+        sync: false
+      - key: MAIL_FROM
+        value: FutureKey <onboarding@resend.dev>
+      - key: CRON_SECRET
+        generateValue: true
+      - key: FRONTEND_ORIGIN
+        sync: false
+
+databases:
+  - name: futurekey-db
+    plan: free
