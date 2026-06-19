@@ -118,24 +118,40 @@ in-process scheduler can't be trusted to fire. Instead an external scheduler cal
 the endpoint decrypts and sends anything due, and the request also keeps the host
 awake. It's idempotent — calling it twice sends nothing the second time.
 
-**Recommended: [cron-job.org](https://cron-job.org)** (free). It runs at a true
-5-minute cadence and supports POST with a custom header. Create a job:
+### Primary pinger: cron-job.org (free)
 
-- URL `https://<your-api>/cron/dispatch`, method **POST**, schedule **every 5 min**
-- Header `Authorization: Bearer <CRON_SECRET>`
+[cron-job.org](https://cron-job.org) runs at a true 5-minute cadence and supports
+POST with a custom header. Set up one job:
 
-`.github/workflows/dispatch.yml` is included as a zero-extra-signup fallback
-(`*/5 * * * *`). It works, but GitHub Actions cron is best-effort and often
-**delayed several minutes** under load, so timing is looser than cron-job.org. If
-you use it, add two repo secrets (**Settings → Secrets and variables → Actions**):
+1. Sign up (free), then **Create cronjob**.
+2. **Title:** FutureKey dispatch
+3. **URL:** `https://futurekey-api.onrender.com/cron/dispatch` (your API + `/cron/dispatch`)
+4. **Schedule:** "Every 5 minutes" (expert mode: minutes `*/5`, every hour/day/month/weekday).
+5. **Request method:** `POST` (under Advanced).
+6. **Headers** → add one: name `Authorization`, value `Bearer <CRON_SECRET>` (the same
+   string as the backend's `CRON_SECRET`).
+7. Save. It shows green check-ins on the History tab once running.
 
-- `BACKEND_URL` — your deployed API base URL (e.g. `https://futurekey-api.onrender.com`)
+That's the only scheduler you need. It's genuinely free (no per-run billing), keeps
+the Render service awake, and you can watch each run succeed/fail in its dashboard.
+
+### Backup: the GitHub Action (manual only)
+
+`.github/workflows/dispatch.yml` does the same ping but is set to **manual run
+only** (Actions tab → Run workflow) — its scheduled trigger is commented out on
+purpose (see the file header for why: GitHub cron is unreliable, and on a private
+repo a 5-min schedule exceeds the free Actions minutes). It needs two repo secrets
+(**Settings → Secrets and variables → Actions**) if you use it:
+
+- `BACKEND_URL` — your API base URL (e.g. `https://futurekey-api.onrender.com`)
 - `CRON_SECRET` — the same value as the backend's `CRON_SECRET`
+
+**Use one or the other, not both** — two schedulers just double-ping (harmless, but
+pointless). cron-job.org as primary, the Action as an on-demand manual flush.
 
 A 5-minute ping also means the Render free web service never idles out, so it
 stays awake ~24/7 (~730 of the 750 free instance-hours/month — fine for this one
 service, but it leaves no room for a second always-on free service in the account).
-[UptimeRobot](https://uptimerobot.com) also works if you need a backup pinger.
 
 ## Database migrations
 

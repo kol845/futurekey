@@ -1,24 +1,41 @@
 name: Dispatch due passwords
 
-# Pings the backend every 5 minutes so it delivers any passwords whose send
-# time has passed (delivery times snap to 5-minute steps). This also keeps the
-# Render free service awake.
+# Pings POST /cron/dispatch so the backend delivers any passwords whose send time
+# has passed. The endpoint is idempotent, so pinging it does no harm if nothing
+# is due.
 #
-# NOTE: GitHub Actions cron is best-effort and is often delayed several minutes
-# under load, so a true 5-minute cadence isn't guaranteed here. For tight timing
-# use cron-job.org instead (see README) — this workflow is the zero-extra-signup
-# fallback.
+# PRIMARY pinger is cron-job.org (free, reliable 5-min cadence — see README).
+# This workflow is a MANUAL backup only: run it from the Actions tab when needed.
+#
+# The scheduled trigger is intentionally disabled. Why:
+#   - GitHub Actions cron is best-effort and often delayed minutes under load.
+#   - On a PRIVATE repo, a run every 5 min = ~8,640 runs/month, each billed as a
+#     full minute, which blows past the 2,000 free Actions minutes. (Public repos
+#     are free/unlimited, but then your code is public.)
+# If you want GitHub to schedule it anyway, uncomment the `schedule` block below.
 on:
-  schedule:
-    - cron: '*/5 * * * *'
-  workflow_dispatch: {} # allow manual runs from the Actions tab
+  workflow_dispatch: {} # manual run from the Actions tab
+  # schedule:
+  #   - cron: '*/5 * * * *'
 
 jobs:
   dispatch:
     runs-on: ubuntu-latest
     steps:
+      - name: Check secrets are set
+        env:
+          BACKEND_URL: ${{ secrets.BACKEND_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$BACKEND_URL" ] || [ -z "$CRON_SECRET" ]; then
+            echo "::error::Set repository secrets BACKEND_URL and CRON_SECRET (Settings -> Secrets and variables -> Actions)."
+            exit 1
+          fi
       - name: Ping /cron/dispatch
+        env:
+          BACKEND_URL: ${{ secrets.BACKEND_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
           curl --fail --silent --show-error -X POST \
-            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
-            "${{ secrets.BACKEND_URL }}/cron/dispatch"
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            "${BACKEND_URL%/}/cron/dispatch"
