@@ -20,8 +20,6 @@ services:
         value: FutureKey <onboarding@resend.dev>
       - key: CRON_SECRET
         generateValue: true
-      - key: FRONTEND_ORIGIN
-        sync: false
 
 databases:
   - name: futurekey-db

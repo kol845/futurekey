@@ -4,17 +4,35 @@ const express = require('express');
 const cors = require('cors');
 
 const { initSchema } = require('./db/pool');
+const { getCounts } = require('./db/messages');
 const messagesRoutes = require('./routes/messages');
 const cronRoutes = require('./routes/cron');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-const origin = process.env.FRONTEND_ORIGIN || '*';
 
-app.use(cors({ origin }));
+// Allow requests from any origin. There are no cookies/sessions here, and the
+// only sensitive endpoint (/cron/dispatch) is guarded by CRON_SECRET, so an
+// open CORS policy is safe and keeps the API reachable from anywhere.
+app.use(cors());
 app.use(express.json());
 
-app.get('/health', (req, res) => res.json({ ok: true }));
+app.get('/health', async (req, res) => {
+  try {
+    const counts = await getCounts();
+    res.json({
+      ok: true,
+      pending: counts.queued, // queued, not yet sent
+      sent: counts.sent, // delivered
+      failed: counts.failed, // attempted but errored
+    });
+  } catch (err) {
+    // Stay a passing liveness check even if the DB is unreachable, so the
+    // platform health check doesn't flap; flag the DB so it's visible.
+    console.error('Health DB query failed:', err.message);
+    res.json({ ok: true, db: 'unavailable' });
+  }
+});
 
 app.use('/api', messagesRoutes);
 app.use('/cron', cronRoutes);

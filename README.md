@@ -39,8 +39,11 @@ npm run dev              # http://localhost:3001
 | `RESEND_API_KEY`  | From the Resend dashboard → API Keys                                 |
 | `MAIL_FROM`       | `FutureKey <onboarding@resend.dev>` works for testing with no domain |
 | `CRON_SECRET`     | Any random string; the dispatcher must send it                       |
-| `FRONTEND_ORIGIN` | `http://localhost:5173` locally                                      |
 | `PORT`            | `3001`                                                               |
+
+CORS is open to all origins (no cookies/auth are used, and `/cron/dispatch` is
+guarded by `CRON_SECRET`), so the API is reachable from any frontend, Postman, or
+curl without extra config.
 
 The `messages` table is created automatically on first boot.
 
@@ -87,8 +90,7 @@ both pointing at the same endpoint with the secret.
 1. New **Web Service** from this repo, root directory `backend` (or use the
    included `backend/render.yaml` as a Blueprint).
 2. Add a free **Render Postgres**; copy its connection string into `DATABASE_URL`.
-3. Set `RESEND_API_KEY`, `MAIL_FROM`, `CRON_SECRET`, and `FRONTEND_ORIGIN` (your
-   Netlify URL).
+3. Set `RESEND_API_KEY`, `MAIL_FROM`, and `CRON_SECRET`.
 4. Build `npm install`, start `npm start`, health check path `/health`.
 
 > Render's free web service sleeps after ~15 min idle and has **no persistent

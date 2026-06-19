@@ -41,4 +41,20 @@ async function markFailed(id) {
   await pool.query(`UPDATE messages SET status = 'failed' WHERE id = $1`, [id]);
 }
 
-module.exports = { insertMessage, getDueMessages, markSent, markFailed };
+/**
+ * Count messages grouped by status.
+ *
+ * @returns {Promise<{ queued: number, sent: number, failed: number }>}
+ */
+async function getCounts() {
+  const result = await pool.query(
+    `SELECT status, COUNT(*)::int AS count FROM messages GROUP BY status`
+  );
+  const counts = { queued: 0, sent: 0, failed: 0 };
+  for (const row of result.rows) {
+    counts[row.status] = row.count;
+  }
+  return counts;
+}
+
+module.exports = { insertMessage, getDueMessages, markSent, markFailed, getCounts };
